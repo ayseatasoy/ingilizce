@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <!-- Mobil cihazlarda (OPPO vb.) ekranın yakınlaştırma yapmadan tam oturmasını sağlar -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Essential Grammar in Use - İnteraktif Çalışma Kitabı</title>
+    
+    <!-- Tailwind CSS (Hızlı ve mobil uyumlu tasarım kütüphanesi) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Okunaklı ve modern yazı tipi -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome İkonları -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    },
+                    colors: {
+                        cambridge: {
+                            red: '#B91C1C',      // Kitabın klasik bordo/kırmızı tonu
+                            navy: '#1E293B',     // Koyu lacivert başlıklar
+                            paper: '#FAF8F5',    // Göz yormayan kitap kağıdı rengi
+                            cream: '#F3EFEA',    // Sol sayfa vurgu kutuları
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Özel Kaydırma Çubuğu ve Geçiş Efektleri */
+        body {
+            background-color: #F1F5F9;
+            color: #1E293B;
+        }
+        .book-input {
+            border-bottom: 2px solid #94A3B8;
+            background-color: #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        .book-input:focus {
+            outline: none;
+            border-bottom-color: #2563EB;
+            background-color: #EFF6FF;
+        }
+        /* Doğru ve Yanlış Cevap Renklendirmeleri */
+        .input-correct {
+            border-color: #16A34A !important;
+            background-color: #F0FDF4 !important;
+            color: #15803D !important;
+            font-weight: 600;
+        }
+        .input-wrong {
+            border-color: #DC2626 !important;
+            background-color: #FEF2F2 !important;
+            color: #B91C1C !important;
+            font-weight: 600;
+        }
+        /* Mobil menü animasyonu */
+        .sidebar-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- ===================================================================== -->
+    <!-- 1. ÜST BAR (HEADER) - Hem Mobil Hem Masaüstü İçin Sabit Kontrol Paneli -->
+    <!-- ===================================================================== -->
+    <header class="bg-cambridge-navy text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <!-- Mobil Menü Açma Butonu -->
+                <button id="mobile-menu-btn" onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-slate-700 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div class="bg-cambridge-red px-2.5 py-1 rounded font-bold text-sm tracking-wider uppercase shadow">
+                    Cambridge
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight">Essential Grammar in Use</h1>
+                    <p class="text-xs text-slate-300 hidden sm:block">Raymond Murphy • İnteraktif Çalışma Kitabı (4th Ed.)</p>
+                </div>
+            </div>
+
+            <!-- Genel İlerleme Göstergesi -->
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-xs text-slate-300">Genel İlerleme</div>
+                    <div class="text-sm font-bold text-emerald-400" id="global-progress-text">0 / 6 Ünite</div>
+                </div>
+                <div class="w-20 sm:w-28 bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div id="global-progress-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- 2. ANA İÇERİK ALANI (SOL MENÜ + SAĞ ÇALIŞMA SAYFASI)                  -->
+    <!-- ===================================================================== -->
+    <div class="flex-1 flex max-w-7xl w-full mx-auto relative">
+        
+        <!-- Mobil Arka Plan Karartması (Menü açıldığında) -->
+        <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+
+        <!-- SOL MENÜ: ÜNİTE LİSTESİ (Java'daki JList / RecyclerView mantığı) -->
+        <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 sidebar-transition shadow-xl lg:shadow-none">
+            <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <span class="font-bold text-slate-700 text-sm uppercase tracking-wider">
+                    <i class="fa-solid fa-book-open mr-2 text-cambridge-red"></i>İçindekiler (Units)
+                </span>
+                <button onclick="toggleSidebar()" class="lg:hidden text-slate-500 hover:text-slate-800 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Ünitelerin JS tarafından dinamik basılacağı liste -->
+            <nav id="unit-list" class="flex-1 overflow-y-auto p-3 space-y-1.5">
+                <!-- JS ile doldurulacak -->
+            </nav>
+
+            <!-- Alt Bilgi & Sıfırlama -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 text-xs text-slate-500">
+                <p class="mb-2"><i class="fa-solid fa-floppy-disk mr-1 text-blue-600"></i> Cevapların tarayıcı hafızasına otomatik kaydedilir.</p>
+                <button onclick="resetAllProgress()" class="text-red-600 hover:underline font-medium">
+                    Tüm İlerlemeyi Sıfırla
+                </button>
+            </div>
+        </aside>
+
+        <!-- SAĞ ALAN: AKTİF ÜNİTE ÇALIŞMA SAYFASI -->
+        <main class="flex-1 p-3 sm:p-6 lg:p-8 overflow-y-auto w-full">
+            
+            <!-- Ünite Başlık Kartı -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="unit-badge" class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-cambridge-red text-white flex flex-col items-center justify-center font-bold shrink-0 shadow-sm">
+                        <span class="text-[10px] uppercase tracking-wider opacity-80">Unit</span>
+                        <span class="text-xl sm:text-2xl leading-none" id="unit-number-display">1</span>
+                    </div>
+                    <div>
+                        <span class="text-xs font-semibold text-cambridge-red uppercase tracking-wider" id="unit-category-display">Present</span>
+                        <h2 class="text-xl sm:text-2xl font-bold text-slate-900" id="unit-title-display">am/is/are</h2>
+                        <p class="text-xs sm:text-sm text-slate-500" id="unit-subtitle-display">Kitap Sayfa: 10-11 • Temel "Olmak" Fiili</p>
+                    </div>
+                </div>
+
+                <!-- Mobil & Tablet İçin Sayfa Geçiş Sekmeleri (Sol Sayfa: Konu / Sağ Sayfa: Alıştırmalar) -->
+                <div class="flex bg-slate-100 p-1 rounded-lg self-start sm:self-center w-full sm:w-auto">
+                    <button onclick="switchTab('lesson')" id="tab-lesson" class="flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all bg-white text-cambridge-navy shadow-sm">
+                        <i class="fa-solid fa-graduation-cap mr-1.5 text-amber-600"></i>Konu (Sol Sayfa)
+                    </button>
+                    <button onclick="switchTab('exercises')" id="tab-exercises" class="flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-pen-to-square mr-1.5 text-blue-600"></i>Alıştırmalar (Sağ Sayfa)
+                    </button>
+                </div>
+            </div>
+
+            <!-- ============================================================= -->
+            <!-- BÖLÜM A: KONU ANLATIMI (KİTABIN SOL SAYFASI)                   -->
+            <!-- ============================================================= -->
+            <section id="lesson-view" class="bg-cambridge-paper rounded-xl shadow-sm border border-amber-200/80 p-5 sm:p-8 space-y-6">
+                <!-- JS tarafından doldurulacak konu anlatımı içeriği -->
+            </section>
+
+            <!-- ============================================================= -->
+            <!-- BÖLÜM B: ALIŞTIRMALAR (KİTABIN SAĞ SAYFASI)                   -->
+            <!-- ============================================================= -->
+            <section id="exercises-view" class="hidden space-y-6">
+                
+                <!-- Sonuç Özet Banner'ı (Kontrol Et'e basılınca görünür) -->
+                <div id="result-banner" class="hidden rounded-xl p-4 sm:p-5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div id="result-icon" class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"></div>
+                        <div>
+                            <h3 class="font-bold text-base sm:text-lg" id="result-title">Sayfa Kontrol Edildi!</h3>
+                            <p class="text-sm" id="result-summary">10 sorudan 8 tanesini doğru yaptın.</p>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-extrabold" id="result-score-badge">%80</div>
+                </div>
+
+                <!-- Alıştırma Bloklarının Basılacağı Ana Konteyner -->
+                <div id="exercises-container" class="space-y-6">
+                    <!-- JS tarafından doldurulacak -->
+                </div>
+
+                <!-- Sayfa Altı Kontrol Butonları -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 sticky bottom-3 z-20">
+                    <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                        <button onclick="checkCurrentUnit()" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Sayfayı Kontrol Et</span>
+                        </button>
+                        <button onclick="clearCurrentUnit()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2" title="Bu sayfadaki cevapları temizle">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span class="hidden sm:inline">Temizle</span>
+                        </button>
+                    </div>
+
+                    <!-- Önceki / Sonraki Ünite Geçişi -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="navigateUnit(-1)" id="prev-unit-btn" class="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium disabled:opacity-40">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> Önceki
+                        </button>
+                        <button onclick="navigateUnit(1)" id="next-unit-btn" class="px-4 py-2.5 rounded-lg bg-cambridge-navy text-white hover:bg-slate-800 text-sm font-medium disabled:opacity-40">
+                            Sonraki Ünite <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 3. ÖZEL BİLDİRİM MODALI (alert() yerine şık onay penceresi)           -->
+    <!-- ===================================================================== -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all">
+            <h3 class="text-lg font-bold text-slate-900 mb-2" id="modal-title">Emin misiniz?</h3>
+            <p class="text-sm text-slate-600 mb-6" id="modal-message">Bu işlem geri alınamaz.</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm">Vazgeç</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium text-sm">Evet, Sıfırla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 4. JAVASCRIPT MİMARİSİ (VERİ + UYGULAMA MANTIĞI)                      -->
+    <!-- ===================================================================== -->
+    <script>
+        /**
+         * ====================================================================
+         * BÖLÜM 1: VERİ KATMANI (DATABASE / MODEL)
+         * Java'daki `List<Unit>` yapısının JavaScript karşılığıdır.
+         * Başka bir kitap yapmak istediğinde sadece bu dizinin içindeki
+         * nesneleri değiştirmen yeterlidir!
+         * ====================================================================
+         */
+        const UNITS_DATA = [
+            {
+                id: 1,
+                category: "Present (Şimdiki / Geniş Zaman)",
+                title: "am/is/are",
+                subtitle: "Kitap Sayfa: 10-11 • Olumlu, Olumsuz ve Kısa Formlar",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">BÖLÜM A & B</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">Özneler ve "to be" (am / is / are) Kullanımı</h3>
+                        <p class="text-sm text-slate-600 mt-1">İngilizcede isim cümleleri kurarken (durum, yaş, meslek, yer bildirirken) özneye göre <strong>am, is</strong> veya <strong>are</strong> kullanırız.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-emerald-700 text-sm mb-2">Olumlu (Positive)</h4>
+                            <ul class="text-sm space-y-1.5 font-mono">
+                                <li><span class="text-slate-500">I</span> <strong>am</strong> (I'm)</li>
+                                <li><span class="text-slate-500">he / she / it</span> <strong>is</strong> (he's / she's / it's)</li>
+                                <li><span class="text-slate-500">we / you / they</span> <strong>are</strong> (we're / you're / they're)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                            <h4 class="font-bold text-red-700 text-sm mb-2">Olumsuz (Negative)</h4>
+                            <ul class="text-sm space-y-1.5 font-mono">
+                                <li><span class="text-slate-500">I</span> <strong>am not</strong> (I'm not)</li>
+                                <li><span class="text-slate-500">he / she / it</span> <strong>is not</strong> (he isn't <em>veya</em> he's not)</li>
+                                <li><span class="text-slate-500">we / you / they</span> <strong>are not</strong> (we aren't <em>veya</em> we're not)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-cambridge-cream p-4 rounded-lg border border-amber-200/70 space-y-2">
+                        <h4 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-lightbulb text-amber-500 mr-1.5"></i>Örnek Cümleler (Kitaptan)</h4>
+                        <p class="text-sm">• <strong>I'm</strong> cold. Can you close the window, please? <em>(Üşüyorum.)</em></p>
+                        <p class="text-sm">• Steve <strong>is</strong> ill. <strong>He's</strong> in bed. <em>(Steve hasta. Yatakta.)</em></p>
+                        <p class="text-sm">• Ann and I <strong>are</strong> good friends. <em>(Ann ve ben iyi arkadaşlarız - Çoğul = are)</em></p>
+                        <p class="text-sm">• <strong>that's</strong> = that is &nbsp;|&nbsp; <strong>there's</strong> = there is &nbsp;|&nbsp; <strong>here's</strong> = here is</p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "1.1",
+                        instruction: "Kısa formları yazın (she's / we aren't vb.).",
+                        questions: [
+                            { id: "1_1_1", prefix: "1. she is →", suffix: "", type: "text", answers: ["she's"], explanation: "'she' ve 'is' birleştiğinde 'i' harfi düşer ve kesme işareti gelir: <strong>she's</strong>." },
+                            { id: "1_1_2", prefix: "2. they are →", suffix: "", type: "text", answers: ["they're"], explanation: "'they' ve 'are' birleştiğinde 'a' harfi düşer: <strong>they're</strong>." },
+                            { id: "1_1_3", prefix: "3. it is not →", suffix: "", type: "text", answers: ["it isn't", "it's not"], explanation: "İki farklı kısa form da doğrudur: <strong>it isn't</strong> veya <strong>it's not</strong>." },
+                            { id: "1_1_4", prefix: "4. that is →", suffix: "", type: "text", answers: ["that's"], explanation: "'that' ve 'is' birleşerek <strong>that's</strong> olur." },
+                            { id: "1_1_5", prefix: "5. I am not →", suffix: "", type: "text", answers: ["i'm not"], explanation: "'I am not' sadece tek şekilde kısaltılır: <strong>I'm not</strong> ('amn't' diye bir kullanım yoktur)." },
+                            { id: "1_1_6", prefix: "6. you are not →", suffix: "", type: "text", answers: ["you aren't", "you're not"], explanation: "İki kısa form da geçerlidir: <strong>you aren't</strong> veya <strong>you're not</strong>." }
+                        ]
+                    },
+                    {
+                        code: "1.2",
+                        instruction: "Boşluklara am, is veya are yazın.",
+                        questions: [
+                            { id: "1_2_1", prefix: "1. The weather", suffix: "nice today. (Örnek: is)", type: "text", answers: ["is", "'s"], explanation: "'The weather' (hava) tekil bir cansız varlıktır (it), bu yüzden <strong>is</strong> gelir." },
+                            { id: "1_2_2", prefix: "2. I", suffix: "not rich.", type: "text", answers: ["am", "'m"], explanation: "'I' öznesi her zaman <strong>am</strong> (veya 'm) alır." },
+                            { id: "1_2_3", prefix: "3. This bag", suffix: "heavy.", type: "text", answers: ["is", "'s"], explanation: "'This bag' (bu çanta) tekildir (it), bu yüzden <strong>is</strong> kullanılır." },
+                            { id: "1_2_4", prefix: "4. These bags", suffix: "heavy.", type: "text", answers: ["are"], explanation: "'These bags' (bu çantalar) çoğuldur (they), bu yüzden <strong>are</strong> gelir." },
+                            { id: "1_2_5", prefix: "5. Look! There", suffix: "Helen.", type: "text", answers: ["is", "'s"], explanation: "Helen tek bir kişi olduğu için <strong>is</strong> (veya There's) kullanılır." },
+                            { id: "1_2_6", prefix: "6. My brother and I", suffix: "good tennis players.", type: "text", answers: ["are"], explanation: "'My brother and I' = 'We' (Biz) demektir. Çoğul olduğu için <strong>are</strong> gelir." },
+                            { id: "1_2_7", prefix: "7. Emily", suffix: "at home. Her children are at school.", type: "text", answers: ["is", "'s"], explanation: "Emily tekil bir şahıstır (she), bu yüzden <strong>is</strong> kullanılır." }
+                        ]
+                    },
+                    {
+                        code: "1.3",
+                        instruction: "Cümleleri uygun özne + am/is/are ile tamamlayın.",
+                        questions: [
+                            { id: "1_3_1", prefix: "1. Steve is ill.", suffix: "in bed.", type: "text", answers: ["he's", "he is"], explanation: "Steve erkek olduğu için zamiri 'he'dir. Cevap: <strong>He's</strong> veya <strong>He is</strong>." },
+                            { id: "1_3_2", prefix: "2. I'm not hungry, but", suffix: "thirsty.", type: "text", answers: ["i'm", "i am"], explanation: "Cümlenin başında 'I'm not' dendiği için özne yine 'I'dır: <strong>I'm</strong> veya <strong>I am</strong>." },
+                            { id: "1_3_3", prefix: "3. Mr Thomas is a very old man.", suffix: "98.", type: "text", answers: ["he's", "he is"], explanation: "Yaş söylerken İngilizcede 'have' değil 'to be' kullanılır: <strong>He's</strong> (98 yaşındadır)." },
+                            { id: "1_3_4", prefix: "4. These chairs aren't beautiful, but", suffix: "comfortable.", type: "text", answers: ["they're", "they are"], explanation: "Sandalyeler (chairs) çoğul olduğu için zamir 'they' olur: <strong>they're</strong>." },
+                            { id: "1_3_5", prefix: "5. The weather is nice today.", suffix: "warm and sunny.", type: "text", answers: ["it's", "it is"], explanation: "Hava durumundan bahsederken özne olarak 'it' kullanılır: <strong>It's</strong>." },
+                            { id: "1_3_6", prefix: "6. Catherine isn't at home.", suffix: "at work.", type: "text", answers: ["she's", "she is"], explanation: "Catherine kadın olduğu için <strong>She's</strong> veya <strong>She is</strong> kullanılır." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 2,
+                category: "Present (Şimdiki / Geniş Zaman)",
+                title: "am/is/are (questions)",
+                subtitle: "Kitap Sayfa: 12-13 • Soru Cümleleri ve Kısa Cevaplar",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">SORU YAPISI</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">am / is / are ile Soru Sorma</h3>
+                        <p class="text-sm text-slate-600 mt-1">Soru yaparken <strong>am, is, are</strong> yardımcı fiillerini öznenin <strong>önüne</strong> alırız.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2 text-sm">
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="text-slate-600">Olumlu: She <strong>is</strong> at home.</span>
+                            <span class="text-blue-700 font-bold">Soru: <strong>Is</strong> she at home?</span>
+                        </div>
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="text-slate-600">Olumlu: Your shoes <strong>are</strong> new.</span>
+                            <span class="text-blue-700 font-bold">Soru: <strong>Are</strong> your shoes new?</span>
+                        </div>
+                        <p class="text-xs text-red-600 pt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Dikkat: "Is at home your mother?" denmez; <strong>"Is your mother at home?"</strong> denir.</p>
+                    </div>
+
+                    <div class="bg-cambridge-cream p-4 rounded-lg border border-amber-200/70 space-y-1.5 text-sm">
+                        <h4 class="font-bold text-slate-800">Soru Kelimeleri (Wh- Questions)</h4>
+                        <p>• <strong>Where</strong> is your mother? <em>(Annen nerede?)</em></p>
+                        <p>• <strong>What colour</strong> is your car? <em>(Araban ne renk?)</em></p>
+                        <p>• <strong>How old</strong> is Joe? <em>(Joe kaç yaşında?)</em></p>
+                        <p>• <strong>How much</strong> are these shoes? <em>(Bu ayakkabılar ne kadar?)</em></p>
+                        <p class="pt-2 text-xs text-slate-600"><strong>Kısa Cevap Kuralı:</strong> Olumlu kısa cevaplarda kısaltma yapılmaz! "Yes, I'm" YANLIŞTIR -> <strong>"Yes, I am."</strong> DOĞRUDUR.</p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "2.1",
+                        instruction: "Sorular için doğru cevapları listeden seçin (Eşleştirme).",
+                        questions: [
+                            { id: "2_1_1", prefix: "1. Where's the camera?", suffix: "", type: "select", options: ["G - In your bag.", "F - No, it's black.", "H - No, she's American.", "C - Yes, you are.", "A - London."], answers: ["G - In your bag."], explanation: "'Where' (Nerede) sorusu yer sorar. Doğru cevap: <strong>G - In your bag.</strong> (Çantanda.)" },
+                            { id: "2_1_2", prefix: "2. Is your car blue?", suffix: "", type: "select", options: ["G - In your bag.", "F - No, it's black.", "H - No, she's American.", "C - Yes, you are.", "A - London."], answers: ["F - No, it's black."], explanation: "Arabanın rengi soruluyor. Cevap: <strong>F - No, it's black.</strong> (Hayır, siyah.)" },
+                            { id: "2_1_3", prefix: "3. Is Kate from London?", suffix: "", type: "select", options: ["G - In your bag.", "F - No, it's black.", "H - No, she's American.", "C - Yes, you are.", "A - London."], answers: ["H - No, she's American."], explanation: "Kate kadın olduğu için 'she' ile cevap verilir: <strong>H - No, she's American.</strong>" },
+                            { id: "2_1_4", prefix: "4. Am I late?", suffix: "", type: "select", options: ["G - In your bag.", "F - No, it's black.", "H - No, she's American.", "C - Yes, you are.", "A - London."], answers: ["C - Yes, you are."], explanation: "'Ben geç mi kaldım?' sorusuna karşı taraf 'Evet, kaldın' der: <strong>C - Yes, you are.</strong>" },
+                            { id: "2_1_5", prefix: "5. Where's Amy from?", suffix: "", type: "select", options: ["G - In your bag.", "F - No, it's black.", "H - No, she's American.", "C - Yes, you are.", "A - London."], answers: ["A - London."], explanation: "'Nereli?' sorusuna şehir ismiyle cevap verilir: <strong>A - London.</strong>" }
+                        ]
+                    },
+                    {
+                        code: "2.2",
+                        instruction: "Karışık verilen kelimelerle doğru soru cümlesi kurun (Soru işaretini biz koyduk).",
+                        questions: [
+                            { id: "2_2_1", prefix: "1. (is / at home / your mother) →", suffix: "?", type: "text", answers: ["is your mother at home"], explanation: "Yardımcı fiil 'Is' başa gelir, ardından özne 'your mother' gelir: <strong>Is your mother at home?</strong>" },
+                            { id: "2_2_2", prefix: "2. (your parents / are / well) →", suffix: "?", type: "text", answers: ["are your parents well"], explanation: "'your parents' çoğul olduğu için 'Are' başa gelir: <strong>Are your parents well?</strong>" },
+                            { id: "2_2_3", prefix: "3. (interesting / is / your job) →", suffix: "?", type: "text", answers: ["is your job interesting"], explanation: "Özne 'your job' tekildir: <strong>Is your job interesting?</strong>" },
+                            { id: "2_2_4", prefix: "4. (the shops / are / open today) →", suffix: "?", type: "text", answers: ["are the shops open today"], explanation: "Çoğul özne 'the shops' önüne 'Are' gelir: <strong>Are the shops open today?</strong>" },
+                            { id: "2_2_5", prefix: "5. (from / where / you / are) →", suffix: "?", type: "text", answers: ["where are you from"], explanation: "Soru kelimesi 'Where' en başa, ardından 'are' ve özne 'you' gelir: <strong>Where are you from?</strong>" },
+                            { id: "2_2_6", prefix: "6. (you / are / late / why) →", suffix: "?", type: "text", answers: ["why are you late"], explanation: "'Why' (Neden) en başa gelir: <strong>Why are you late?</strong>" }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 3,
+                category: "Present (Şimdiki Zaman)",
+                title: "I am doing (present continuous)",
+                subtitle: "Kitap Sayfa: 14-15 • Şu Anda Yapılan Eylemler",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">ŞİMDİKİ ZAMAN</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">am / is / are + fiil-ing</h3>
+                        <p class="text-sm text-slate-600 mt-1">Tam şu anda (konuşma anında) gerçekleşmekte olan eylemleri anlatmak için kullanılır.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2 text-sm">
+                        <p>• Please be quiet. <strong>I'm working.</strong> <em>(Lütfen sessiz ol. Şu an çalışıyorum.)</em></p>
+                        <p>• Look, there's Sarah. <strong>She's wearing</strong> a brown coat. <em>(Kahverengi bir palto giyiyor.)</em></p>
+                        <p>• The weather is nice. <strong>It isn't raining.</strong> <em>(Yağmur yağmıyor.)</em></p>
+                    </div>
+
+                    <div class="bg-cambridge-cream p-4 rounded-lg border border-amber-200/70 text-sm space-y-1.5">
+                        <h4 class="font-bold text-slate-800">Yazım Kuralları (Spelling - Ek 5)</h4>
+                        <p>• Sonu <strong>-e</strong> ile bitenlerde 'e' düşer: com<strong>e</strong> → com<strong>ing</strong>, writ<strong>e</strong> → writ<strong>ing</strong></p>
+                        <p>• Kısa tek heceli fiillerde son sessiz harf çift yazılır: ru<strong>n</strong> → ru<strong>nn</strong>ing, si<strong>t</strong> → si<strong>tt</strong>ing, swi<strong>m</strong> → swi<strong>mm</strong>ing</p>
+                        <p>• Sonu <strong>-ie</strong> ile bitenler -ying olur: l<strong>ie</strong> → l<strong>ying</strong></p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "3.2",
+                        instruction: "Cümleleri şu fiillerle tamamlayın: build, cook, go, have, stand, stay, swim, work",
+                        questions: [
+                            { id: "3_2_1", prefix: "1. Please be quiet. I", suffix: ".", type: "text", answers: ["'m working", "am working"], explanation: "Lütfen sessiz ol dediğine göre şu an çalışıyor: <strong>'m working</strong> veya <strong>am working</strong>." },
+                            { id: "3_2_2", prefix: "2. 'Where's John?' 'He's in the kitchen. He", suffix: ".'", type: "text", answers: ["'s cooking", "is cooking"], explanation: "Mutfakta olduğuna göre yemek pişiriyor: <strong>'s cooking</strong> veya <strong>is cooking</strong>." },
+                            { id: "3_2_3", prefix: "3. 'You", suffix: "on my foot.' 'Oh, I'm sorry.'", type: "text", answers: ["'re standing", "are standing"], explanation: "'Ayağıma basıyorsun (ayağımın üstünde duruyorsun)': <strong>'re standing</strong> veya <strong>are standing</strong>." },
+                            { id: "3_2_4", prefix: "4. Look! Somebody", suffix: "in the river.", type: "text", answers: ["is swimming", "'s swimming"], explanation: "Nehirde yüzüyor. 'swim' fiiline -ing eklenirken 'm' çift yazılır: <strong>is swimming</strong>." },
+                            { id: "3_2_5", prefix: "5. We're here on holiday. We", suffix: "at the Central Hotel.", type: "text", answers: ["'re staying", "are staying"], explanation: "Tatildeyiz ve otelde kalıyoruz: <strong>'re staying</strong> veya <strong>are staying</strong>." },
+                            { id: "3_2_6", prefix: "6. 'Where's Sue?' 'She", suffix: "a shower.'", type: "text", answers: ["'s having", "is having"], explanation: "Duş alıyor ('have' sonundaki 'e' düşer): <strong>'s having</strong> veya <strong>is having</strong>." },
+                            { id: "3_2_7", prefix: "7. They", suffix: "a new hotel in the city centre at the moment.", type: "text", answers: ["'re building", "are building"], explanation: "Şu sıralar yeni bir otel inşa ediyorlar: <strong>'re building</strong> veya <strong>are building</strong>." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                category: "Present (Geniş Zaman)",
+                title: "I do/work/like etc. (present simple)",
+                subtitle: "Kitap Sayfa: 18-19 • Genel Doğrular ve Alışkanlıklar",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">GENİŞ ZAMAN</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">He / She / It Öznelerinde "-s" Takısı</h3>
+                        <p class="text-sm text-slate-600 mt-1">Her zaman yapılan işler, alışkanlıklar ve bilimsel gerçekler için kullanılır.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2 text-sm">
+                        <p>• I / we / you / they <strong>work / read / live / have</strong></p>
+                        <p class="text-cambridge-red font-semibold">• he / she / it <strong>works / reads / lives / has</strong></p>
+                        <p class="text-xs text-slate-500 pt-1">Sonu -s, -sh, -ch ile bitenlere <strong>-es</strong> gelir (watch → watches). Sessiz harf + y ile bitenlerde 'y' düşer <strong>-ies</strong> gelir (study → studies).</p>
+                    </div>
+
+                    <div class="bg-cambridge-cream p-4 rounded-lg border border-amber-200/70 text-sm space-y-1">
+                        <h4 class="font-bold text-slate-800">Sıklık Zarflarının Yeri</h4>
+                        <p><strong>always / never / often / usually / sometimes</strong> fiilden <strong>ÖNCE</strong> gelir:</p>
+                        <p>• Sue <strong>always gets</strong> to work early. <em>(Sue gets always YANLIŞTIR)</em></p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "5.1",
+                        instruction: "Verilen fiilleri he/she/it için -s veya -es ekleyerek yazın.",
+                        questions: [
+                            { id: "5_1_1", prefix: "1. (read) she", suffix: "", type: "text", answers: ["reads"], explanation: "Düzenli fiil, sonuna sadece -s alır: <strong>reads</strong>." },
+                            { id: "5_1_2", prefix: "2. (think) he", suffix: "", type: "text", answers: ["thinks"], explanation: "Sonuna -s alır: <strong>thinks</strong>." },
+                            { id: "5_1_3", prefix: "3. (fly) it", suffix: "", type: "text", answers: ["flies"], explanation: "Sessiz harf (l) + y ile bittiği için 'y' düşer ve -ies gelir: <strong>flies</strong>." },
+                            { id: "5_1_4", prefix: "4. (dance) he", suffix: "", type: "text", answers: ["dances"], explanation: "Sonunda zaten 'e' var, sadece -s eklenir: <strong>dances</strong>." },
+                            { id: "5_1_5", prefix: "5. (have) she", suffix: "", type: "text", answers: ["has"], explanation: "'have' fiili düzensizdir; he/she/it için 'haves' değil <strong>has</strong> olur." },
+                            { id: "5_1_6", prefix: "6. (finish) it", suffix: "", type: "text", answers: ["finishes"], explanation: "Sonu -sh ile bittiği için -es takısı alır: <strong>finishes</strong>." }
+                        ]
+                    },
+                    {
+                        code: "5.3",
+                        instruction: "Cümleleri şu fiillerle tamamlayın: boil, close, cost, meet, open, speak, teach, wash",
+                        questions: [
+                            { id: "5_3_1", prefix: "1. Maria", suffix: "four languages.", type: "text", answers: ["speaks"], explanation: "Maria (she) tekil olduğu için fiil -s alır: <strong>speaks</strong>." },
+                            { id: "5_3_2", prefix: "2. The shops in the city centre usually", suffix: "at 9 o'clock.", type: "text", answers: ["open"], explanation: "'The shops' (dükkanlar) çoğul olduğu için fiil yalın kalır: <strong>open</strong>." },
+                            { id: "5_3_3", prefix: "3. The City Museum", suffix: "at 5 o'clock in the evening.", type: "text", answers: ["closes"], explanation: "Müze (it) tekildir, fiil -s alır: <strong>closes</strong>." },
+                            { id: "5_3_4", prefix: "4. Tina is a teacher. She", suffix: "mathematics to young children.", type: "text", answers: ["teaches"], explanation: "Sonu -ch ile bittiği ve özne 'she' olduğu için -es alır: <strong>teaches</strong>." },
+                            { id: "5_3_5", prefix: "5. Peter's car is always dirty. He never", suffix: "it.", type: "text", answers: ["washes"], explanation: "Sonu -sh ile bittiği ve özne 'he' olduğu için -es alır: <strong>washes</strong>." },
+                            { id: "5_3_6", prefix: "6. Water", suffix: "at 100 degrees Celsius.", type: "text", answers: ["boils"], explanation: "Su (it) sayılamayan tekil bir isimdir, bilimsel gerçeklik: <strong>boils</strong>." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 10,
+                category: "Past (Geçmiş Zaman)",
+                title: "was/were",
+                subtitle: "Kitap Sayfa: 28-29 • Geçmişte Durum Bildirme",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">GEÇMİŞ ZAMAN (TO BE)</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">am / is → was &nbsp;|&nbsp; are → were</h3>
+                        <p class="text-sm text-slate-600 mt-1">Dün, geçen hafta veya geçmişteki bir anda nerede ya da nasıl olduğumuzu anlatırız.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2 text-sm">
+                        <p>• I / he / she / it → <strong>was</strong> (Olumsuz: <strong>wasn't</strong>)</p>
+                        <p>• we / you / they → <strong>were</strong> (Olumsuz: <strong>weren't</strong>)</p>
+                        <p class="pt-2 text-slate-600">Örnek: Last year Rachel <strong>was</strong> 22, so she <strong>is</strong> 23 now.</p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "10.2",
+                        instruction: "Şimdiki zaman için am/is/are, geçmiş zaman için was/were yazın.",
+                        questions: [
+                            { id: "10_2_1", prefix: "1. Last year she was 22, so she", suffix: "23 now.", type: "text", answers: ["is", "'s"], explanation: "'now' (şimdi) dediği için şimdiki zaman kullanılır: <strong>is</strong>." },
+                            { id: "10_2_2", prefix: "2. Today the weather is nice, but yesterday it", suffix: "very cold.", type: "text", answers: ["was"], explanation: "'yesterday' (dün) geçmiş zamandır ve hava (it) tekildir: <strong>was</strong>." },
+                            { id: "10_2_3", prefix: "3. I", suffix: "hungry. Can I have something to eat?", type: "text", answers: ["am", "'m"], explanation: "Şu an yiyecek bir şey istediğine göre şu an aç: <strong>am</strong> (veya 'm)." },
+                            { id: "10_2_4", prefix: "4. I feel fine this morning, but I", suffix: "very tired last night.", type: "text", answers: ["was"], explanation: "'last night' (dün gece) geçmiş zamandır, 'I' öznesi <strong>was</strong> alır." },
+                            { id: "10_2_5", prefix: "5. Where", suffix: "you at 11 o'clock last Friday morning?", type: "text", answers: ["were"], explanation: "'you' öznesi geçmiş zamanda her zaman <strong>were</strong> alır." },
+                            { id: "10_2_6", prefix: "6. This time last year I", suffix: "in Paris.", type: "text", answers: ["was"], explanation: "'last year' (geçen yıl) geçmiş zaman: <strong>was</strong>." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 15,
+                category: "Present Perfect",
+                title: "I have done (present perfect 1)",
+                subtitle: "Kitap Sayfa: 38-39 • Etkisi Şu An Süren Geçmiş Eylemler",
+                lessonHTML: `
+                    <div class="border-b border-amber-200 pb-4">
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">PRESENT PERFECT</span>
+                        <h3 class="text-lg font-bold text-slate-900 mt-2">have / has + Past Participle (Fiilin 3. Hali)</h3>
+                        <p class="text-sm text-slate-600 mt-1">Geçmişte gerçekleşmiş ama sonucu <strong>şu anda</strong> geçerli olan durumlar için kullanılır.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm space-y-2 text-sm">
+                        <p>• I / we / you / they <strong>have ('ve)</strong> + V3 (cleaned, lost, gone)</p>
+                        <p>• he / she / it <strong>has ('s)</strong> + V3 (cleaned, lost, gone)</p>
+                        <p class="pt-2 text-blue-700">• <strong>I've lost</strong> my passport. <em>(= Pasaportumu kaybettim, şu an bulamıyorum.)</em></p>
+                        <p class="text-blue-700">• 'Where's Rebecca?' '<strong>She's gone</strong> to bed.' <em>(= Yatağa gitti, şu an yatakta.)</em></p>
+                    </div>
+                `,
+                exercises: [
+                    {
+                        code: "15.2",
+                        instruction: "Cümleleri Present Perfect (have/has + fiilin 3. hali) ile tamamlayın.",
+                        questions: [
+                            { id: "15_2_1", prefix: "1. (lose) I", suffix: "my keys. I don't know where they are.", type: "text", answers: ["'ve lost", "have lost"], explanation: "'lose' fiilinin 3. hali 'lost'tur. Özne 'I' olduğu için: <strong>'ve lost</strong> veya <strong>have lost</strong>." },
+                            { id: "15_2_2", prefix: "2. (buy) I", suffix: "some new shoes. Do you want to see them?", type: "text", answers: ["'ve bought", "have bought"], explanation: "'buy' fiilinin 3. hali 'bought'tur: <strong>'ve bought</strong> veya <strong>have bought</strong>." },
+                            { id: "15_2_3", prefix: "3. (go) 'Where is Helen?' 'She's not here. She", suffix: "out.'", type: "text", answers: ["'s gone", "has gone"], explanation: "Helen (she) olduğu için 'has' ve 'go' fiilinin 3. hali 'gone' gelir: <strong>'s gone</strong> veya <strong>has gone</strong>." },
+                            { id: "15_2_4", prefix: "4. (break) Look! Somebody", suffix: "that window.", type: "text", answers: ["has broken", "'s broken"], explanation: "'Somebody' (birisi) tekil kabul edilir, bu yüzden 'has' ve 'break'in 3. hali 'broken' gelir: <strong>has broken</strong>." },
+                            { id: "15_2_5", prefix: "5. (forget) I know that woman, but I", suffix: "her name.", type: "text", answers: ["'ve forgotten", "have forgotten"], explanation: "'forget' fiilinin 3. hali 'forgotten'dır: <strong>'ve forgotten</strong> veya <strong>have forgotten</strong>." }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        /**
+         * ====================================================================
+         * BÖLÜM 2: UYGULAMA DURUMU (STATE MANAGEMENT)
+         * Java'daki sınıf değişkenleri (fields) gibi düşünebilirsin.
+         * ====================================================================
+         */
+        let currentUnitId = 1;
+        let currentTab = 'lesson'; // 'lesson' veya 'exercises'
+        
+        // Kullanıcının verdiği cevapları ve ünite puanlarını tutan ana nesne
+        // localStorage'dan okunur, yoksa boş başlatılır.
+        let appState = JSON.parse(localStorage.getItem('murphy_grammar_state')) || {
+            answers: {},      // Örn: { "1_1_1": "she's" }
+            unitScores: {},   // Örn: { 1: { correct: 18, total: 19, checked: true } }
+            lastUnitId: 1
+        };
+
+        /**
+         * ====================================================================
+         * BÖLÜM 3: BAŞLATMA VE EKRAN ÇİZİM FONKSİYONLARI (UI RENDER)
+         * ====================================================================
+         */
+        window.onload = function() {
+            currentUnitId = appState.lastUnitId || 1;
+            renderSidebar();
+            loadUnit(currentUnitId);
+            updateGlobalProgress();
+        };
+
+        // Sol menüdeki ünite listesini oluşturur
+        function renderSidebar() {
+            const listEl = document.getElementById('unit-list');
+            listEl.innerHTML = '';
+
+            UNITS_DATA.forEach(unit => {
+                const isActive = unit.id === currentUnitId;
+                const scoreInfo = appState.unitScores[unit.id];
+                
+                // Tamamlanma rozeti hesaplama
+                let statusBadge = `<span class="text-xs text-slate-400">Başlanmadı</span>`;
+                if (scoreInfo && scoreInfo.checked) {
+                    const pct = Math.round((scoreInfo.correct / scoreInfo.total) * 100);
+                    const badgeColor = pct === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800';
+                    statusBadge = `<span class="text-xs font-bold px-2 py-0.5 rounded-full ${badgeColor}">%${pct}</span>`;
+                }
+
+                const btn = document.createElement('button');
+                btn.onclick = () => {
+                    loadUnit(unit.id);
+                    // Mobilde ünite seçilince menüyü otomatik kapat
+                    if (window.innerWidth < 1024) toggleSidebar();
+                };
+                btn.className = `w-full text-left p-3 rounded-xl transition-all flex items-center justify-between border ${
+                    isActive 
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm' 
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-transparent'
+                }`;
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                            isActive ? 'bg-cambridge-red text-white' : 'bg-slate-100 text-slate-700'
+                        }">${unit.id}</span>
+                        <div class="truncate">
+                            <div class="font-semibold text-sm truncate">${unit.title}</div>
+                            <div class="text-[11px] ${isActive ? 'text-slate-300' : 'text-slate-400'} truncate">${unit.category}</div>
+                        </div>
+                    </div>
+                    <div class="ml-2 shrink-0">${statusBadge}</div>
+                `;
+                listEl.appendChild(btn);
+            });
+        }
+
+        // Seçilen üniteyi ekrana yükler
+        function loadUnit(unitId) {
+            currentUnitId = unitId;
+            appState.lastUnitId = unitId;
+            saveState();
+
+            const unit = UNITS_DATA.find(u => u.id === unitId);
+            if (!unit) return;
+
+            // Üst Başlık Bilgilerini Güncelle
+            document.getElementById('unit-number-display').innerText = unit.id;
+            document.getElementById('unit-category-display').innerText = unit.category;
+            document.getElementById('unit-title-display').innerText = unit.title;
+            document.getElementById('unit-subtitle-display').innerText = unit.subtitle;
+
+            // Sol Sayfayı (Konu Anlatımı) Doldur
+            document.getElementById('lesson-view').innerHTML = unit.lessonHTML;
+
+            // Sağ Sayfayı (Alıştırmalar) Dinamik Olarak Oluştur
+            renderExercises(unit);
+
+            // Önceki / Sonraki buton durumlarını ayarla
+            const currentIndex = UNITS_DATA.findIndex(u => u.id === unitId);
+            document.getElementById('prev-unit-btn').disabled = (currentIndex === 0);
+            document.getElementById('next-unit-btn').disabled = (currentIndex === UNITS_DATA.length - 1);
+
+            // Eğer bu ünite daha önce kontrol edildiyse sonuçları tekrar göster
+            document.getElementById('result-banner').classList.add('hidden');
+            if (appState.unitScores[unitId] && appState.unitScores[unitId].checked) {
+                checkCurrentUnit(false); // Sessizce renklendir
+            }
+
+            renderSidebar();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Alıştırma kutularını HTML'e basar
+        function renderExercises(unit) {
+            const container = document.getElementById('exercises-container');
+            container.innerHTML = '';
+
+            unit.exercises.forEach(ex => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6";
+
+                let questionsHTML = '';
+                ex.questions.forEach(q => {
+                    const savedVal = appState.answers[q.id] || '';
+                    let inputControlHTML = '';
+
+                    if (q.type === 'select') {
+                        // Çoktan seçmeli eşleştirme kutusu
+                        let opts = `<option value="">-- Seçiniz --</option>`;
+                        q.options.forEach(opt => {
+                            const selected = savedVal === opt ? 'selected' : '';
+                            opts += `<option value="${opt}" ${selected}>${opt}</option>`;
+                        });
+                        inputControlHTML = `
+                            <select id="input_${q.id}" onchange="handleInput('${q.id}', this.value)" 
+                                class="book-input border border-slate-300 rounded-lg px-3 py-1.5 text-sm sm:text-base w-full sm:w-64">
+                                ${opts}
+                            </select>
+                        `;
+                    } else {
+                        // Klasik boşluk doldurma kutusu
+                        inputControlHTML = `
+                            <input type="text" id="input_${q.id}" value="${savedVal.replace(/"/g, '&quot;')}" 
+                                oninput="handleInput('${q.id}', this.value)"
+                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                                placeholder="cevabı yazın..."
+                                class="book-input px-2.5 py-1 rounded text-sm sm:text-base w-44 sm:w-56 font-medium text-blue-900">
+                        `;
+                    }
+
+                    questionsHTML += `
+                        <div class="py-3 border-b border-slate-100 last:border-b-0" id="row_${q.id}">
+                            <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base text-slate-800 leading-relaxed">
+                                <span>${q.prefix}</span>
+                                ${inputControlHTML}
+                                <span>${q.suffix}</span>
+                                <span id="icon_${q.id}" class="ml-1"></span>
+                            </div>
+                            <!-- Yanlış yapıldığında açılacak Türkçe Açıklama Kutusu -->
+                            <div id="feedback_${q.id}" class="hidden mt-2.5 p-3 rounded-lg bg-red-50 border border-red-200 text-xs sm:text-sm text-slate-700">
+                            </div>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-start gap-3 mb-4 pb-3 border-b border-slate-200">
+                        <span class="bg-cambridge-red text-white font-bold text-xs px-2.5 py-1 rounded-md shrink-0 mt-0.5">${ex.code}</span>
+                        <h4 class="font-bold text-slate-800 text-sm sm:text-base">${ex.instruction}</h4>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        ${questionsHTML}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        /**
+         * ====================================================================
+         * BÖLÜM 4: CEVAP KONTROL ALGORİTMASI VE ETKİLEŞİM
+         * ====================================================================
+         */
+
+        // Kullanıcı her harf yazdığında cevabı hafızaya alır
+        function handleInput(questionId, value) {
+            appState.answers[questionId] = value;
+            saveState();
+            
+            // Kullanıcı hatasını düzeltmeye başladığında kırmızı uyarıyı sıfırla
+            const inputEl = document.getElementById(`input_${questionId}`);
+            inputEl.classList.remove('input-correct', 'input-wrong');
+            document.getElementById(`icon_${questionId}`).innerHTML = '';
+        }
+
+        // Metinleri kıyaslamadan önce standartlaştırır (Mobil klavye tırnak farkını çözer)
+        function normalizeText(str) {
+            if (!str) return "";
+            return str
+                .toLowerCase()
+                .replace(/’/g, "'")      // OPPO/Android klavyedeki eğik tırnağı düz tırnağa çevirir
+                .replace(/‘/g, "'")
+                .replace(/[.,!?]/g, "")  // Sondaki noktalama işaretlerini yoksay
+                .replace(/\s+/g, " ")    // Fazla boşlukları tek boşluğa indir
+                .trim();
+        }
+
+        // "Sayfayı Kontrol Et" butonuna basıldığında çalışır
+        function checkCurrentUnit(scrollToBanner = true) {
+            const unit = UNITS_DATA.find(u => u.id === currentUnitId);
+            let totalQuestions = 0;
+            let correctCount = 0;
+
+            unit.exercises.forEach(ex => {
+                ex.questions.forEach(q => {
+                    totalQuestions++;
+                    const inputEl = document.getElementById(`input_${q.id}`);
+                    const feedbackEl = document.getElementById(`feedback_${q.id}`);
+                    const iconEl = document.getElementById(`icon_${q.id}`);
+                    
+                    const userRaw = inputEl.value;
+                    const userClean = normalizeText(userRaw);
+
+                    // Kitaptaki alternatif cevaplardan herhangi biriyle eşleşiyor mu?
+                    const isCorrect = q.answers.some(ans => normalizeText(ans) === userClean);
+
+                    inputEl.classList.remove('input-correct', 'input-wrong');
+
+                    if (isCorrect) {
+                        correctCount++;
+                        inputEl.classList.add('input-correct');
+                        iconEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>`;
+                        feedbackEl.classList.add('hidden');
+                    } else {
+                        inputEl.classList.add('input-wrong');
+                        iconEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-600 text-lg"></i>`;
+                        
+                        // Yanlışsa veya boş bırakıldıysa altına Türkçe açıklamayı aç!
+                        const acceptedText = q.answers.join("  /  ");
+                        feedbackEl.innerHTML = `
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-info text-red-600 mt-0.5"></i>
+                                <div>
+                                    <div class="font-bold text-red-800 mb-1">
+                                        Doğru Cevap: <span class="bg-white px-2 py-0.5 rounded border border-red-200 text-emerald-700 font-mono">${acceptedText}</span>
+                                    </div>
+                                    <p class="text-slate-700 leading-relaxed">${q.explanation}</p>
+                                </div>
+                            </div>
+                        `;
+                        feedbackEl.classList.remove('hidden');
+                    }
+                });
+            });
+
+            // Skoru kaydet ve üst banner'ı göster
+            appState.unitScores[currentUnitId] = {
+                correct: correctCount,
+                total: totalQuestions,
+                checked: true
+            };
+            saveState();
+            renderSidebar();
+            updateGlobalProgress();
+
+            const pct = Math.round((correctCount / totalQuestions) * 100);
+            const banner = document.getElementById('result-banner');
+            const rIcon = document.getElementById('result-icon');
+            const rTitle = document.getElementById('result-title');
+            const rSummary = document.getElementById('result-summary');
+            const rBadge = document.getElementById('result-score-badge');
+
+            banner.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-900', 'bg-amber-50', 'border-amber-200', 'text-amber-900');
+            
+            if (pct === 100) {
+                banner.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+                rIcon.className = "w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0";
+                rIcon.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+                rTitle.innerText = "Mükemmel! Hatasız Tamamladın!";
+            } else {
+                banner.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-900');
+                rIcon.className = "w-10 h-10 rounded-full bg-amber-500 text-white flex items-center justify-center text-lg shrink-0";
+                rIcon.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i>`;
+                rTitle.innerText = "Kontrol Tamamlandı";
+            }
+
+            rSummary.innerText = `Bu sayfadaki ${totalQuestions} sorudan ${correctCount} tanesini doğru yaptın. Yanlışların açıklamaları aşağıda gösterildi.`;
+            rBadge.innerText = `%${pct}`;
+
+            if (scrollToBanner) {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // Mevcut sayfadaki cevapları temizler
+        function clearCurrentUnit() {
+            const unit = UNITS_DATA.find(u => u.id === currentUnitId);
+            unit.exercises.forEach(ex => {
+                ex.questions.forEach(q => {
+                    delete appState.answers[q.id];
+                });
+            });
+            delete appState.unitScores[currentUnitId];
+            saveState();
+            loadUnit(currentUnitId);
+            updateGlobalProgress();
+        }
+
+        // Konu Anlatımı (Sol Sayfa) ve Alıştırmalar (Sağ Sayfa) arası geçiş
+        function switchTab(tabName) {
+            currentTab = tabName;
+            const lessonView = document.getElementById('lesson-view');
+            const exercisesView = document.getElementById('exercises-view');
+            const tabLesson = document.getElementById('tab-lesson');
+            const tabExercises = document.getElementById('tab-exercises');
+
+            if (tabName === 'lesson') {
+                lessonView.classList.remove('hidden');
+                exercisesView.classList.add('hidden');
+                tabLesson.className = "flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all bg-white text-cambridge-navy shadow-sm";
+                tabExercises.className = "flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all text-slate-600 hover:text-slate-900";
+            } else {
+                lessonView.classList.add('hidden');
+                exercisesView.classList.remove('hidden');
+                tabExercises.className = "flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all bg-white text-cambridge-navy shadow-sm";
+                tabLesson.className = "flex-1 sm:flex-initial px-4 py-2 rounded-md text-sm font-semibold transition-all text-slate-600 hover:text-slate-900";
+            }
+        }
+
+        // Önceki / Sonraki Ünite Geçişi
+        function navigateUnit(direction) {
+            const currentIndex = UNITS_DATA.findIndex(u => u.id === currentUnitId);
+            const nextIndex = currentIndex + direction;
+            if (nextIndex >= 0 && nextIndex < UNITS_DATA.length) {
+                loadUnit(UNITS_DATA[nextIndex].id);
+            }
+        }
+
+        // Mobil çekmece menüyü açar/kapatır
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        // Genel ilerleme çubuğunu günceller
+        function updateGlobalProgress() {
+            const completedCount = Object.values(appState.unitScores).filter(s => s.checked).length;
+            const totalUnits = UNITS_DATA.length;
+            const pct = Math.round((completedCount / totalUnits) * 100);
+            
+            document.getElementById('global-progress-text').innerText = `${completedCount} / ${totalUnits} Ünite`;
+            document.getElementById('global-progress-bar').style.width = `${pct}%`;
+        }
+
+        // Verileri tarayıcıya kaydeder
+        function saveState() {
+            localStorage.setItem('murphy_grammar_state', JSON.stringify(appState));
+        }
+
+        // Tüm ilerlemeyi sıfırlamak için özel onay kutusu
+        function resetAllProgress() {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-title').innerText = "Tüm İlerlemeyi Sıfırla";
+            document.getElementById('modal-message').innerText = "Şimdiye kadar çözdüğün tüm alıştırmalar ve puanların silinecek. Emin misin?";
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            document.getElementById('modal-confirm-btn').onclick = () => {
+                localStorage.removeItem('murphy_grammar_state');
+                appState = { answers: {}, unitScores: {}, lastUnitId: 1 };
+                closeModal();
+                loadUnit(1);
+                updateGlobalProgress();
+            };
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    </script>
+</body>
+</html>
